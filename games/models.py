@@ -1,7 +1,7 @@
 import os
 import pytz
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.contrib.auth.models import AbstractUser, UserManager
 from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.utils import timezone
@@ -244,6 +244,13 @@ class User(AbstractUser):
 
     def get_absolute_url(self):
         return reverse("player_detail", args=[self.id])
+
+    def get_games_with_total_sips(self):
+        return (
+            self.all_cards.values("game")
+            .order_by("game")
+            .annotate(total_sips=Sum("value"))
+        )
 
 
 class Season:
@@ -552,6 +559,14 @@ class Card(models.Model):
     value = models.SmallIntegerField(choices=VALUES)
     suit = models.CharField(max_length=1, choices=SUITS)
     drawn_datetime = models.DateTimeField(blank=True, null=True)
+    drawn_by = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="all_cards"
+    )
+
+    def save(self, *args, **kwargs):
+        if not hasattr(self, "drawn_by"):
+            self.drawn_by = self.get_user()
+        super().save(*args, **kwargs)
 
     @classmethod
     def get_ordered_cards_for_players(cls, player_count):

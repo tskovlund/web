@@ -1,7 +1,5 @@
 from .base import *
 from dotenv import load_dotenv
-import sentry_sdk
-from sentry_sdk.integrations.django import DjangoIntegration
 
 load_dotenv()
 
@@ -36,9 +34,40 @@ DATABASES = {
 
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-sentry_sdk.init(dsn=os.environ["SENTRY_DNS"], integrations=[DjangoIntegration()])
+# Server admins (get an email when server errors happen)
+ADMINS = [("Asger Hautop Drewsen", "asgerdrewsen@gmail.com")]
 
 FACEBOOK_PAGE_ID = "227174884109471"
 FACEBOOK_ACCESS_TOKEN = os.environ["FACEBOOK_ACCESS_TOKEN"]
 
 CELERY_BROKER_URL = "amqp://guest:guest@rabbitmq:5672//"
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        # Include the default Django email handler for errors
+        # This is what you'd get without configuring logging at all.
+        "mail_admins": {
+            "class": "django.utils.log.AdminEmailHandler",
+            "level": "ERROR",
+            # But the emails are plain text by default - HTML is nicer
+            "include_html": True,
+        },
+        # Log to a text file that can be rotated by logrotate
+        "logfile": {
+            "class": "logging.handlers.WatchedFileHandler",
+            "filename": "/app/django.log",
+        },
+    },
+    "loggers": {
+        # Again, default Django configuration to email unhandled exceptions
+        "django.request": {
+            "handlers": ["mail_admins"],
+            "level": "ERROR",
+            "propagate": True,
+        },
+        # Might as well log any errors anywhere else in Django
+        "django": {"handlers": ["logfile"], "level": "ERROR", "propagate": False},
+    },
+}

@@ -245,11 +245,18 @@ class User(AbstractUser):
     def get_absolute_url(self):
         return reverse("player_detail", args=[self.id])
 
-    def get_games_with_total_sips(self):
-        return (
-            self.all_cards.values("game")
-            .order_by("game")
-            .annotate(total_sips=Sum("value"))
+    def get_ranked_games(self):
+        return self.gameplayer_set.filter(
+            dnf=False, game__dnf=False, game__official=True
+        )
+
+    def get_games_with_total_sips(self, season=None):
+        if not season:
+            season = all_time_season
+
+        qs = filter_season(self.get_ranked_games, season, key="game")
+        return qs.values("game").annotate(
+            total_sips=Sum("all_cards_2__value")
         )
 
 
@@ -562,10 +569,18 @@ class Card(models.Model):
     drawn_by = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="all_cards"
     )
+    drawn_by_2 = models.ForeignKey(
+        GamePlayer, on_delete=models.CASCADE, related_name="all_cards_2"
+    )
 
     def save(self, *args, **kwargs):
         if not hasattr(self, "drawn_by"):
-            self.drawn_by = self.get_user()
+            self.drawn_by = self.game.ordered_players()[
+                self.index % self.game.players.count()
+            ]
+            self.drawn_by_2 = self.ordered_gameplayers()[
+                self.index % self.game.players.count()
+            ]
         super().save(*args, **kwargs)
 
     @classmethod
@@ -582,9 +597,6 @@ class Card(models.Model):
 
     def __str__(self):
         return f"{self.value} {self.suit}"
-
-    def get_user(self):
-        return self.game.ordered_players()[self.index % self.game.players.count()]
 
     def value_str(self):
         return dict(self.VALUES)[self.value]
@@ -626,4 +638,4 @@ class Chug(models.Model):
         return str(self.duration)
 
     def __str__(self):
-        return f"{self.card.get_user()}: {self.card} ({self.duration_str()})"
+        return f"{self.card.drawn_by}: {self.card} ({self.duration_str()})"

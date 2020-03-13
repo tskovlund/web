@@ -55,6 +55,17 @@ class TheBarrelAchievement(Achievement):
         )
 
 
+class BundeCampAchievement(Achievement):
+    name = "Bunde Camp"
+    description = "Get 50 chugs in game"
+    icon = "ace"
+
+    def has_achieved(user):
+        return (
+            user.stats_for_season(all_time_season).total_chugs >= 50
+        )
+
+
 """
 class LateGameAchievement(Achievement):
     name = "Late Game"

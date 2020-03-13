@@ -3,7 +3,7 @@ import datetime
 import pytz
 from django.db.models import Q
 
-from .models import Game, PlayerStat, Season
+from .models import Game, PlayerStat, Season, all_time_season
 
 ACHIEVEMENTS = []
 
@@ -77,7 +77,7 @@ class FastGameAchievement(Achievement):
 class DanishDSTAchievement(Achievement):
     name = "DST"
     description = "Participated in a game, while a DST transition happened in Denmark"
-    icon = "backward_time"
+    icon = "backward-time"
 
     @staticmethod
     def get_transition_times():
@@ -89,3 +89,30 @@ class DanishDSTAchievement(Achievement):
             query |= Q(start_datetime__lt=dt, end_datetime__gt=dt)
 
         return user.games.filter(query).exists()
+
+
+class TheBarrelAchievement(Achievement):
+    name = "The Barrel"
+    description = "Consumed 100 beers in-game"
+    icon = "barrel"
+
+    def has_achieved(user):
+        return (user.stats_for_season(all_time_season).total_sips / 14) >= 100
+
+
+class BundeCampAchievement(Achievement):
+    name = "Chug Camp"
+    description = "Got 50 chugs in-game"
+    icon = "ace"
+
+    def has_achieved(user):
+        return user.stats_for_season(all_time_season).total_chugs >= 50
+
+
+class StudyHardAchievement(Achievement):
+    name = "Study Hard"
+    description = f"Spend at least the amount of time corresponding to 2.5 ECTS in game (56 hours)"
+    icon = "diploma"
+
+    def has_achieved(user):
+        return user.stats_for_season(all_time_season).approx_ects >= 2.5

@@ -22,8 +22,6 @@ from django.db.models import (
     Case,
     Count,
     DateTimeField,
-    DurationField,
-    ExpressionWrapper,
     F,
     IntegerField,
     Sum,
@@ -488,11 +486,9 @@ class StatsView(TemplateView):
             or 0
         )
 
-        total_duration = games.annotate(
-            duration=ExpressionWrapper(
-                F("end_datetime") - F("start_datetime"), DurationField()
-            )
-        ).aggregate(total_duration=Sum("duration"))["total_duration"]
+        total_duration = Game.add_durations(games).aggregate(
+            total_duration=Sum("duration")
+        )["total_duration"]
 
         context["game_stats"] = {
             "total_games": games.count(),

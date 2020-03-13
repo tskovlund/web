@@ -1,3 +1,10 @@
+import datetime
+
+import pytz
+from django.db.models import Q
+
+from .models import Game, PlayerStat, Season
+
 ACHIEVEMENTS = []
 
 
@@ -35,23 +42,50 @@ class Top10Achievement(Achievement):
     icon = "trophy-cup"
 
     def has_achieved(user):
-        return (
-            user.gameplayer_set.filter(dnf=True)
-            .filter(game__dnf=False, game__end_datetime__isnull=False)
-            .exists()
-        )
+        current_season = Season.current_season()
+        for i in range(1, current_season.number + 1):
+            top10 = (
+                PlayerStat.objects.filter(season_number=i)
+                .order_by("-total_sips")[:10]
+                .values("user")
+            )
+            if {"user": user.id} in top10:
+                return True
+
+        return False
 
 
-"""
-class LateGameAchievement(Achievement):
-    name = "Late Game"
-    description = "Participated in a game that started before 04:00 but ended after"
-    icon = "night-sleep"
+class FastGameAchievement(Achievement):
+    name = "Fast Game"
+    description = "Finished a game in less than 30 minutes"
+    icon = "stopwatch"
 
     def has_achieved(user):
         return (
-            user.gameplayer_set.filter(dnf=True)
-            .filter(game__dnf=False, game__end_datetime__isnull=False)
+            Game.add_durations(
+                Game.objects.filter(
+                    gameplayer__in=user.gameplayer_set.filter(dnf=False).filter(
+                        game__dnf=False
+                    )
+                )
+            )
+            .filter(duration__lt=datetime.timedelta(minutes=30))
             .exists()
         )
-"""
+
+
+class DanishDSTAchievement(Achievement):
+    name = "DST"
+    description = "Participated in a game, while a DST transition happened in Denmark"
+    icon = "backward_time"
+
+    @staticmethod
+    def get_transition_times():
+        return pytz.timezone("Europe/Copenhagen")._utc_transition_times[1:]
+
+    def has_achieved(user):
+        query = Q()
+        for dt in DanishDSTAchievement.get_transition_times():
+            query |= Q(start_datetime__lt=dt, end_datetime__gt=dt)
+
+        return user.games.filter(query).exists()

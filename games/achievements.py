@@ -66,6 +66,17 @@ class BundeCampAchievement(Achievement):
         )
 
 
+class StudyHardAchievement(Achievement):
+    name = "Study Hard"
+    description = f"Spend at least the amount of time corresponding to 2.5 ECTS in game (56 hours)"
+    icon = "diploma"
+
+    def has_achieved(user):
+        return (
+            user.stats_for_season(all_time_season).approx_ects >= 2.5
+        )
+
+
 """
 class LateGameAchievement(Achievement):
     name = "Late Game"

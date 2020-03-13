@@ -44,6 +44,14 @@
 
 <div class="container">
 	<div class="row achievements">
+		{% for achievement in achievements %}
+			<img class="rounder{% if achievement.achieved %} active{% endif %}" src="{{ achievement.icon_url }}" title="{{ achievement.name }}: {{ achievement.description }}">
+		{% endfor %}
+	</div>
+</div>
+
+<div class="container">
+	<div class="row achievements">
 		<img class="rounder active" src="/static/achievements/ace.svg" alt="">
 		<img class="rounder" src="/static/achievements/stopwatch.svg" alt="">
 		<img class="rounder" src="/static/achievements/infinity.svg" alt="">

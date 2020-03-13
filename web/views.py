@@ -35,6 +35,7 @@ from django.utils import timezone
 from django.views.generic import DetailView, ListView, TemplateView, UpdateView
 from scipy.stats import hypergeom, norm
 
+from games.achievements import ACHIEVEMENTS
 from games.models import (
     Card,
     Chug,
@@ -276,6 +277,17 @@ class PlayerDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         season = SeasonChooser(self.request).current
         context["stats"] = self.object.stats_for_season(season)
+
+        context["achievements"] = []
+        for achievement in ACHIEVEMENTS:
+            context["achievements"].append(
+                {
+                    "achieved": achievement.has_achieved(self.object),
+                    "name": achievement.name,
+                    "description": achievement.description,
+                    "icon_url": f"/static/achievements/{achievement.icon}.svg",
+                }
+            )
 
         context["rankings"] = []
         for ranking in RANKINGS:

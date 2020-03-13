@@ -1,3 +1,5 @@
+from .models import all_time_season
+
 ACHIEVEMENTS = []
 
 
@@ -39,6 +41,17 @@ class Top10Achievement(Achievement):
             user.gameplayer_set.filter(dnf=True)
             .filter(game__dnf=False, game__end_datetime__isnull=False)
             .exists()
+        )
+
+
+class TheBarrelAchievement(Achievement):
+    name = "The Barrel"
+    description = "Consume 100 beers in game"
+    icon = "barrel"
+
+    def has_achieved(user):
+        return (
+            (user.stats_for_season(all_time_season).total_sips / 14) >= 100
         )
 
 
